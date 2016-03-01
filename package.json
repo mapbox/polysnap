@@ -1,0 +1,25 @@
+{
+  "name": "polyclip2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "rbush": "https://github.com/mourner/rbush#memory-perf"
+  },
+  "devDependencies": {
+    "eslint": "^2.2.0",
+    "eslint-config-mourner": "^2.0.0"
+  },
+  "eslintConfig": {
+    "extends": "mourner",
+    "rules": {
+      "no-unmodified-loop-condition": 0
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Vladimir Agafonkin",
+  "license": "ISC"
+}
