@@ -30,29 +30,27 @@ function polyclip(subject) {
     }
     console.timeEnd('search intersections');
 
-    console.time('sort/filter hot pixels');
-    hotPixels = sortUnique(hotPixels, compareHotPixels);
-    console.timeEnd('sort/filter hot pixels');
+    console.time('filter unique hot pixels');
+    hotPixels = uniquePixels(hotPixels);
+    console.timeEnd('filter unique hot pixels');
 
     console.time('match hot pixels');
-    for (var i = 0; i < hotPixels.length; i++) {
+    for (i = 0; i < hotPixels.length; i++) {
         handleHotPixel(hotPixels[i], edgeTree);
     }
     console.timeEnd('match hot pixels');
 
     console.time('connect edges through hot pixels');
-    for (i = 0, k = 0; i < edges.length; i++) {
+    for (i = 0; i < edges.length; i++) {
         snapRoundEdge(edges[i]);
     }
     console.timeEnd('connect edges through hot pixels');
 
     var result = [];
-    var e = last;
     do {
         result.push(e.p);
         e = e.next;
     } while (e !== last);
-    result.push(e.p);
 
     return result;
 }
@@ -74,18 +72,18 @@ function snapRoundEdge(e) {
     }
 }
 
-function sortUnique(arr, compare) {
-    arr.sort(compare);
+function uniquePixels(arr) {
+    arr.sort(comparePixels);
     var result = [];
     for (var i = 0; i < arr.length; i++) {
-        if (i === 0 || compare(arr[i], arr[i - 1]) !== 0) {
+        if (i === 0 || comparePixels(arr[i], arr[i - 1]) !== 0) {
             result.push(arr[i]);
         }
     }
     return result;
 }
 
-function compareHotPixels(a, b) {
+function comparePixels(a, b) {
     return (a[0] - b[0]) || (a[1] - b[1]);
 }
 
@@ -166,7 +164,7 @@ function searchIntersections(tree, edge, intersections) {
 }
 
 function isNewIntersection(s, q) {
-    return s !== q.next && s.next !== q && s.i < q.i &&
+    return s !== q.next && s.i + 1 < q.i &&
            segmentsIntersect(s.p, s.next.p, q.p, q.next.p);
 }
 
@@ -213,8 +211,6 @@ function updateBBox(node) {
     return node;
 }
 
-var k = 0;
-
 function handleIntersection(e1, e2, hotPixels) {
     var p1 = e1.p,
         p1b = e1.next.p,
@@ -233,21 +229,15 @@ function handleIntersection(e1, e2, hotPixels) {
     if (cross === 0) return;
 
     var s = (ex * d2y - ey * d2x) / cross;
-    var x = Math.round(p1[0] + s * d1x);
-    var y = Math.round(p1[1] + s * d1y);
 
-    addIntersection(x, y, e1, hotPixels);
-    addIntersection(x, y, e2, hotPixels);
-}
+    var p = [
+        Math.round(p1[0] + s * d1x),
+        Math.round(p1[1] + s * d1y)
+    ];
 
-function addIntersection(x, y, e, hotPixels) {
-    var a = e.p;
-    var b = e.next.p;
+    if (equals(p, p1) || equals(p, p1b) || equals(p, p2) || equals(p, p2b)) return;
 
-    if (x === a[0] && y === a[1]) return;
-    if (x === b[0] && y === b[1]) return;
-
-    hotPixels.push([x, y]);
+    hotPixels.push(p);
 }
 
 function equals(a, b) {

@@ -18,12 +18,12 @@
 
         subject = subject.map(function (p) {
             return [
-                Math.round(p[0] / 20),
-                Math.round(p[1] / 20)
+                Math.round(p[0] / 5),
+                Math.round(p[1] / 5)
             ];
         });
         // var clipping = [[[2300,2200],[3400,2000],[3800,2500],[2300,2700]]];
-        // var subject = randomRing(1000, 0, 200);
+        var subject = randomRing(100, 0, 50);
         // var subject = [[48,25],[45,22],[29,32],[39,28],[29,7],[19,49],[39,28],[48,25]];
         // var subject = [[2,3],[8,2],[9,4],[3,2],[4,3],[9,1]];
 
@@ -36,14 +36,7 @@
         var result = polyclip(subject);
         console.timeEnd('clip');
 
-        viz.poly(result, 'black');
-
-        function drawGrid(min, max) {
-            for (var i = min; i < max; i++) {
-                viz.vertical(i, 'rgba(0,0,0,0.1)');
-                viz.horizontal(i, 'rgba(0,0,0,0.1)');
-            }
-        }
+        viz.poly(result, 'black', 'rgba(255,0,0,0.1)');
 
         function randomRing(N, min, max) {
             var ring = [];
