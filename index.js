@@ -30,18 +30,64 @@ function polyclip(subject) {
     }
     console.timeEnd('search intersections');
 
+    console.time('sort/filter hot pixels');
+    hotPixels = sortUnique(hotPixels, compareHotPixels);
+    console.timeEnd('sort/filter hot pixels');
+
     console.time('match hot pixels');
     for (var i = 0; i < hotPixels.length; i++) {
         handleHotPixel(hotPixels[i], edgeTree);
     }
     console.timeEnd('match hot pixels');
+
+    console.time('connect edges through hot pixels');
+    for (i = 0, k = 0; i < edges.length; i++) {
+        snapRoundEdge(edges[i]);
+    }
+    console.timeEnd('connect edges through hot pixels');
+
+    var result = [];
+    var e = last;
+    do {
+        result.push(e.p);
+        e = e.next;
+    } while (e !== last);
+    result.push(e.p);
+
+    return result;
+}
+
+function manhattanDist(a, b) {
+    return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+}
+
+function snapRoundEdge(e) {
+    if (!e.hotPixels) return;
+
+    e.hotPixels.sort(function (a, b) {
+        return manhattanDist(e.p, a) - manhattanDist(e.p, b);
+    });
+
+    var last = e;
+    for (var i = 0; i < e.hotPixels.length; i++) {
+        last = insertNode(e.hotPixels[i], e.i, last);
+    }
+}
+
+function sortUnique(arr, compare) {
+    arr.sort(compare);
+    var result = [];
+    for (var i = 0; i < arr.length; i++) {
+        if (i === 0 || compare(arr[i], arr[i - 1]) !== 0) {
+            result.push(arr[i]);
+        }
+    }
+    return result;
 }
 
 function compareHotPixels(a, b) {
     return (a[0] - b[0]) || (a[1] - b[1]);
 }
-
-var k = 0;
 
 function handleHotPixel(p, tree) {
     var node = tree.data;
@@ -55,8 +101,9 @@ function handleHotPixel(p, tree) {
                 if (!node.leaf) {
                     nodesToSearch.push(q);
 
-                } else if (!equals(p, q.p) && !equals(p, q.next.p)) {
-                    matchHotPixelAgainstEdge(p, q);
+                } else if (hotPixelIntersectsEdge(p, q)) {
+                    q.hotPixels = q.hotPixels || [];
+                    q.hotPixels.push(p);
                 }
             }
         }
@@ -64,8 +111,30 @@ function handleHotPixel(p, tree) {
     }
 }
 
-function matchHotPixelAgainstEdge(p, e) {
+function hotPixelIntersectsEdge(p, e) {
+    var a = e.p;
+    var b = e.next.p;
 
+    if (equals(p, a) || equals(p, b)) return false;
+
+    var minX = p[0] - 0.5;
+    var minY = p[1] - 0.5;
+    var maxX = p[0] + 0.5;
+    var maxY = p[1] + 0.5;
+
+    var tx = a[0] + (b[0] - a[0]) * (maxY - a[1]) / (b[1] - a[1]); // top x
+    if (tx >= minX && tx < maxX) return true;
+
+    var bx = a[0] + (b[0] - a[0]) * (minY - a[1]) / (b[1] - a[1]); // bottom x
+    if (bx >= minX && bx < maxX) return true;
+
+    var ly = a[1] + (b[1] - a[1]) * (minX - a[0]) / (b[0] - a[0]); // left y
+    if (ly >= minY && ly < maxY) return true;
+
+    var ry = a[1] + (b[1] - a[1]) * (maxX - a[0]) / (b[0] - a[0]); // right y
+    if (ry >= minY && ry < maxY) return true;
+
+    return false;
 }
 
 function pointInsideBBox(p, box) {
@@ -117,7 +186,8 @@ function insertNode(p, i, prev) {
         minX: 0,
         minY: 0,
         maxX: 0,
-        maxY: 0
+        maxY: 0,
+        hotPixels: null
     };
 
     if (!prev) {
