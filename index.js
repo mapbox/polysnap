@@ -120,10 +120,10 @@ function hotPixelIntersectsEdge(p, e) {
     var px = p[0] - a[0];
     var py = p[1] - a[1];
 
-    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * px - 1), 2 * dy)) return true; // bottom x
-    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * px + 1), 2 * dy)) return true; // top x
-    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * py - 1), 2 * dx)) return true; // left y
-    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * py + 1), 2 * dx)) return true; // right y
+    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * py - 1), 2 * dy)) return true; // bottom x
+    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * py + 1), 2 * dy)) return true; // top x
+    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * px - 1), 2 * dx)) return true; // left y
+    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * px + 1), 2 * dx)) return true; // right y
 
     return false;
 }
