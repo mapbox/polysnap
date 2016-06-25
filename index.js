@@ -25,7 +25,7 @@ function polyclip(subject) {
     console.timeEnd('index edges');
 
     console.time('search intersections');
-    for (var i = 0; i < edges.length; i++) {
+    for (i = 0; i < edges.length; i++) {
         searchIntersections(edgeTree, edges[i], hotPixels);
     }
     console.timeEnd('search intersections');
@@ -212,32 +212,30 @@ function updateBBox(node) {
 }
 
 function handleIntersection(e1, e2, hotPixels) {
-    var p1 = e1.p,
-        p1b = e1.next.p,
-        p2 = e2.p,
-        p2b = e2.next.p,
+    var a = e1.p;
+    var b = e1.next.p;
+    var c = e2.p;
+    var d = e2.next.p;
+    var d1x = b[0] - a[0];
+    var d1y = b[1] - a[1];
+    var d2x = d[0] - c[0];
+    var d2y = d[1] - c[1];
+    var cross = d1x * d2y - d1y * d2x;
+    var nom = (c[0] - a[0]) * d2y - (c[1] - a[1]) * d2x;
+    var px = a[0] + divFloor(2 * d1x * nom + cross, 2 * cross);
+    var py = a[1] + divFloor(2 * d1y * nom + cross, 2 * cross);
+    var p = [px, py];
 
-        ex = p2[0] - p1[0],
-        ey = p2[1] - p1[1],
-        d1x = p1b[0] - p1[0],
-        d1y = p1b[1] - p1[1],
-        d2x = p2b[0] - p2[0],
-        d2y = p2b[1] - p2[1],
-        cross = d1x * d2y - d1y * d2x,
-        sqrLen0 = d1x * d1x + d1y * d1y;
-
-    if (cross === 0) return;
-
-    var s = (ex * d2y - ey * d2x) / cross;
-
-    var p = [
-        Math.round(p1[0] + s * d1x),
-        Math.round(p1[1] + s * d1y)
-    ];
-
-    if (equals(p, p1) || equals(p, p1b) || equals(p, p2) || equals(p, p2b)) return;
+    if (equals(p, a) || equals(p, b) || equals(p, c) || equals(p, d)) return;
 
     hotPixels.push(p);
+}
+
+function divFloor(n, d) {
+    var r = n % d;
+    var v = (n - r) / d;
+    if ((n > 0) ^ (d > 0) && r !== 0) v--;
+    return v;
 }
 
 function equals(a, b) {
