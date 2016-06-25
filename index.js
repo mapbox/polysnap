@@ -4,13 +4,13 @@ var rbush = require('rbush');
 
 module.exports = polyclip;
 
-function polyclip(subject) {
+function polyclip(polygon) {
     var edges = [];
     var hotPixels = [];
 
-    for (var i = 0, last; i < subject.length; i++) {
+    for (var i = 0, last; i < polygon.length; i++) {
         // link polygon points into a circular doubly linked list
-        last = insertNode(subject[i], i, last);
+        last = insertNode(polygon[i], i, last);
         updateBBox(last.prev);
         edges.push(last);
 
@@ -224,6 +224,9 @@ function divRound(n, d) {
 }
 
 function divFloor(n, d) {
+    if (Math.abs(n) > Number.MAX_SAFE_INTEGER) {
+        throw new Error('Coordinates too big');
+    }
     var r = n % d;
     var v = (n - r) / d;
     if ((n > 0) ^ (d > 0) && r !== 0) v--;
