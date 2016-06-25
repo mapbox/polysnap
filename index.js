@@ -115,22 +115,15 @@ function hotPixelIntersectsEdge(p, e) {
 
     if (equals(p, a) || equals(p, b)) return false;
 
-    var minX = p[0] - 0.5;
-    var minY = p[1] - 0.5;
-    var maxX = p[0] + 0.5;
-    var maxY = p[1] + 0.5;
+    var dx = b[0] - a[0];
+    var dy = b[1] - a[1];
+    var px = p[0] - a[0];
+    var py = p[1] - a[1];
 
-    var tx = a[0] + (b[0] - a[0]) * (maxY - a[1]) / (b[1] - a[1]); // top x
-    if (tx >= minX && tx < maxX) return true;
-
-    var bx = a[0] + (b[0] - a[0]) * (minY - a[1]) / (b[1] - a[1]); // bottom x
-    if (bx >= minX && bx < maxX) return true;
-
-    var ly = a[1] + (b[1] - a[1]) * (minX - a[0]) / (b[0] - a[0]); // left y
-    if (ly >= minY && ly < maxY) return true;
-
-    var ry = a[1] + (b[1] - a[1]) * (maxX - a[0]) / (b[0] - a[0]); // right y
-    if (ry >= minY && ry < maxY) return true;
+    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * px - 1), 2 * dy)) return true; // bottom x
+    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * px + 1), 2 * dy)) return true; // top x
+    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * py - 1), 2 * dx)) return true; // left y
+    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * py + 1), 2 * dx)) return true; // right y
 
     return false;
 }
@@ -164,8 +157,7 @@ function searchIntersections(tree, edge, intersections) {
 }
 
 function isNewIntersection(s, q) {
-    return s !== q.next && s.i + 1 < q.i &&
-           segmentsIntersect(s.p, s.next.p, q.p, q.next.p);
+    return s.i + 1 < q.i && s !== q.next && segmentsIntersect(s.p, s.next.p, q.p, q.next.p);
 }
 
 function bboxIntersects(a, b) {
@@ -222,13 +214,17 @@ function handleIntersection(e1, e2, hotPixels) {
     var d2y = d[1] - c[1];
     var cross = d1x * d2y - d1y * d2x;
     var nom = (c[0] - a[0]) * d2y - (c[1] - a[1]) * d2x;
-    var px = a[0] + divFloor(2 * d1x * nom + cross, 2 * cross);
-    var py = a[1] + divFloor(2 * d1y * nom + cross, 2 * cross);
+    var px = a[0] + divRound(d1x * nom, cross);
+    var py = a[1] + divRound(d1y * nom, cross);
     var p = [px, py];
 
     if (equals(p, a) || equals(p, b) || equals(p, c) || equals(p, d)) return;
 
     hotPixels.push(p);
+}
+
+function divRound(n, d) {
+    return divFloor(2 * n + d, 2 * d);
 }
 
 function divFloor(n, d) {
