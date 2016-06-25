@@ -24,7 +24,7 @@ function polyclip(polygon) {
 
     // search for intersections between edges and store them in hot pixels array
     for (i = 0; i < edges.length; i++) {
-        searchIntersections(edgeTree, edges[i], hotPixels);
+        searchIntersections(edges[i], edgeTree, hotPixels);
     }
 
     // filter out duplicate hot pixels
@@ -51,8 +51,9 @@ function polyclip(polygon) {
     return result;
 }
 
-function searchIntersections(tree, edge, intersections) {
-    var node = tree.data;
+// search for intersections between a given edge and all other edges
+function searchIntersections(edge, edgeTree, intersections) {
+    var node = edgeTree.data;
     var nodesToSearch = [];
 
     while (node) {
@@ -72,10 +73,12 @@ function searchIntersections(tree, edge, intersections) {
     }
 }
 
+// check if two edges introduce a new intersection
 function isNewIntersection(s, q) {
     return s.i + 1 < q.i && s !== q.next && segmentsIntersect(s.p, s.next.p, q.p, q.next.p);
 }
 
+// check if a hot pixel intersects an edge
 function hotPixelIntersectsEdge(p, e) {
     var a = e.p;
     var b = e.next.p;
@@ -95,7 +98,8 @@ function hotPixelIntersectsEdge(p, e) {
     return false;
 }
 
-function handleIntersection(e1, e2, hotPixels) {
+// find a rounded intersection point between two edges and append to intersections array
+function handleIntersection(e1, e2, intersections) {
     var a = e1.p;
     var b = e1.next.p;
     var c = e2.p;
@@ -112,11 +116,12 @@ function handleIntersection(e1, e2, hotPixels) {
 
     if (equals(p, a) || equals(p, b) || equals(p, c) || equals(p, d)) return;
 
-    hotPixels.push(p);
+    intersections.push(p);
 }
 
-function handleHotPixel(p, tree) {
-    var node = tree.data;
+// match a hot pixel against all edges
+function handleHotPixel(p, edgeTree) {
+    var node = edgeTree.data;
     var nodesToSearch = [];
 
     while (node) {
@@ -137,19 +142,22 @@ function handleHotPixel(p, tree) {
     }
 }
 
+// connect an edge through its hot points
 function snapRoundEdge(e) {
     if (!e.hotPixels) return;
 
+    // sort hot pixels by pixel distance from the first edge point
     e.hotPixels.sort(function (a, b) {
         return manhattanDist(e.p, a) - manhattanDist(e.p, b);
     });
 
-    var last = e;
-    for (var i = 0; i < e.hotPixels.length; i++) {
+    // insert hot points between edge endpoints
+    for (var i = 0, last = e; i < e.hotPixels.length; i++) {
         last = insertNode(e.hotPixels[i], e.i, last);
     }
 }
 
+// insert a point into a circular doubly linked list
 function insertNode(p, i, prev) {
     var node = {
         p: p,
@@ -176,6 +184,7 @@ function insertNode(p, i, prev) {
     return node;
 }
 
+// update edge bounding box
 function updateBBox(node) {
     var p1 = node.p;
     var p2 = node.next.p;
@@ -186,10 +195,12 @@ function updateBBox(node) {
     return node;
 }
 
+// integer division rounded
 function divRound(n, d) {
     return divFloor(2 * n + d, 2 * d);
 }
 
+// integer division
 function divFloor(n, d) {
     if (Math.abs(n) > Number.MAX_SAFE_INTEGER) {
         throw new Error('Coordinates too big');
@@ -200,6 +211,7 @@ function divFloor(n, d) {
     return v;
 }
 
+// check if two segments intersect (ignoring collinear overlapping case)
 function segmentsIntersect(a0, a1, b0, b1) {
     var x0 = area(a0, b0, b1);
     var y0 = area(a1, b0, b1);
@@ -215,6 +227,7 @@ function segmentsIntersect(a0, a1, b0, b1) {
 }
 
 
+// check if two bboxes intersect
 function bboxIntersects(a, b) {
     return b.minX <= a.maxX &&
            b.minY <= a.maxY &&
@@ -222,6 +235,7 @@ function bboxIntersects(a, b) {
            b.maxY >= a.minY;
 }
 
+// check if a point is inside a bbox
 function pointInsideBBox(p, box) {
     return p[0] >= box.minX &&
            p[0] <= box.maxX &&
@@ -229,6 +243,7 @@ function pointInsideBBox(p, box) {
            p[1] <= box.maxY;
 }
 
+// filter out duplicate points
 function uniquePixels(arr) {
     arr.sort(comparePixels);
     var result = [];
@@ -240,18 +255,22 @@ function uniquePixels(arr) {
     return result;
 }
 
+// lexicographic point comparison
 function comparePixels(a, b) {
     return (a[0] - b[0]) || (a[1] - b[1]);
 }
 
+// calculate signed area of a triangle
 function area(p, q, r) {
     return (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1]);
 }
 
+// check if two points are equal
 function equals(a, b) {
     return a[0] === b[0] && a[1] === b[1];
 }
 
+// Manhattan distance between two points
 function manhattanDist(a, b) {
     return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
 }
