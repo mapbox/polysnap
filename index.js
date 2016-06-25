@@ -5,48 +5,44 @@ var rbush = require('rbush');
 module.exports = polyclip;
 
 function polyclip(subject) {
-    console.time('index edges');
-    for (var i = 0, last; i < subject.length; i++) {
-        last = insertNode(subject[i], i, last);
-    }
-
-    var edgeTree = rbush();
     var edges = [];
     var hotPixels = [];
 
-    var e = last;
-    do {
-        edges.push(updateBBox(e));
-        hotPixels.push(e.p);
-        e = e.next;
-    } while (e !== last);
+    for (var i = 0, last; i < subject.length; i++) {
+        // link polygon points into a circular doubly linked list
+        last = insertNode(subject[i], i, last);
+        updateBBox(last.prev);
+        edges.push(last);
 
-    edgeTree.load(edges);
-    console.timeEnd('index edges');
+        // add each endpoint to hot pixels array
+        hotPixels.push(last.p);
+    }
+    updateBBox(last);
 
-    console.time('search intersections');
+    // index all edges by bbox with an R-tree
+    var edgeTree = rbush().load(edges);
+
+    // search for intersections between edges and store them in hot pixels array
     for (i = 0; i < edges.length; i++) {
         searchIntersections(edgeTree, edges[i], hotPixels);
     }
-    console.timeEnd('search intersections');
 
-    console.time('filter unique hot pixels');
+    // filter out duplicate hot pixels
     hotPixels = uniquePixels(hotPixels);
-    console.timeEnd('filter unique hot pixels');
 
-    console.time('match hot pixels');
+    // match every hot pixel against all edges, finding intersections
     for (i = 0; i < hotPixels.length; i++) {
         handleHotPixel(hotPixels[i], edgeTree);
     }
-    console.timeEnd('match hot pixels');
 
-    console.time('connect edges through hot pixels');
+    // subdivide each edge by its matching hot pixels
     for (i = 0; i < edges.length; i++) {
         snapRoundEdge(edges[i]);
     }
-    console.timeEnd('connect edges through hot pixels');
 
+    // collect the result array from the linked list
     var result = [];
+    var e = last;
     do {
         result.push(e.p);
         e = e.next;
