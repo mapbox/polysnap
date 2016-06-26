@@ -90,10 +90,10 @@ function hotPixelIntersectsEdge(p, e) {
     var px = p[0] - a[0];
     var py = p[1] - a[1];
 
-    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * py - 1), 2 * dy)) return true; // bottom x
-    if (dy !== 0 && p[0] === a[0] + divRound(dx * (2 * py + 1), 2 * dy)) return true; // top x
-    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * px - 1), 2 * dx)) return true; // left y
-    if (dx !== 0 && p[1] === a[1] + divRound(dy * (2 * px + 1), 2 * dx)) return true; // right y
+    if (dy !== 0 && p[0] === a[0] + Math.floor(0.5 + dx * (py - 0.5) / dy)) return true; // bottom x
+    if (dy !== 0 && p[0] === a[0] + Math.floor(0.5 + dx * (py + 0.5) / dy)) return true; // top x
+    if (dx !== 0 && p[1] === a[1] + Math.floor(0.5 + dy * (px - 0.5) / dx)) return true; // left y
+    if (dx !== 0 && p[1] === a[1] + Math.floor(0.5 + dy * (px + 0.5) / dx)) return true; // right y
 
     return false;
 }
@@ -110,8 +110,8 @@ function handleIntersection(e1, e2, intersections) {
     var d2y = d[1] - c[1];
     var cross = d1x * d2y - d1y * d2x;
     var nom = (c[0] - a[0]) * d2y - (c[1] - a[1]) * d2x;
-    var px = a[0] + divRound(d1x * nom, cross);
-    var py = a[1] + divRound(d1y * nom, cross);
+    var px = a[0] + Math.floor(0.5 + d1x * nom / cross);
+    var py = a[1] + Math.floor(0.5 + d1y * nom / cross);
     var p = [px, py];
 
     if (equals(p, a) || equals(p, b) || equals(p, c) || equals(p, d)) return;
@@ -193,22 +193,6 @@ function updateBBox(node) {
     node.maxX = Math.max(p1[0], p2[0]);
     node.maxY = Math.max(p1[1], p2[1]);
     return node;
-}
-
-// integer division rounded
-function divRound(n, d) {
-    return divFloor(2 * n + d, 2 * d);
-}
-
-// integer division
-function divFloor(n, d) {
-    if (Math.abs(n) > Number.MAX_SAFE_INTEGER) {
-        throw new Error('Coordinates too big');
-    }
-    var r = n % d;
-    var v = (n - r) / d;
-    if ((n > 0) ^ (d > 0) && r !== 0) v--;
-    return v;
 }
 
 // check if two segments intersect (ignoring collinear overlapping case)
