@@ -65,7 +65,7 @@ function searchIntersections(edge, edgeTree, intersections) {
                     nodesToSearch.push(q);
 
                 } else if (isNewIntersection(edge, q)) {
-                    handleIntersection(edge, q, intersections);
+                    findIntersection(edge.p, edge.next.p, q.p, q.next.p, intersections);
                 }
             }
         }
@@ -78,11 +78,8 @@ function isNewIntersection(s, q) {
     return s.i + 1 < q.i && s !== q.next && segmentsIntersect(s.p, s.next.p, q.p, q.next.p);
 }
 
-// check if a hot pixel intersects an edge
-function hotPixelIntersectsEdge(p, e) {
-    var a = e.p;
-    var b = e.next.p;
-
+// check if an edge intersects a pixel
+function edgeIntersectsPixel(a, b, p) {
     if (equals(p, a) || equals(p, b)) return false;
 
     var dx = b[0] - a[0];
@@ -99,11 +96,7 @@ function hotPixelIntersectsEdge(p, e) {
 }
 
 // find a rounded intersection point between two edges and append to intersections array
-function handleIntersection(e1, e2, intersections) {
-    var a = e1.p;
-    var b = e1.next.p;
-    var c = e2.p;
-    var d = e2.next.p;
+function findIntersection(a, b, c, d, intersections) {
     var d1x = b[0] - a[0];
     var d1y = b[1] - a[1];
     var d2x = d[0] - c[0];
@@ -132,7 +125,7 @@ function handleHotPixel(p, edgeTree) {
                 if (!node.leaf) {
                     nodesToSearch.push(q);
 
-                } else if (hotPixelIntersectsEdge(p, q)) {
+                } else if (edgeIntersectsPixel(p, q.p, q.next.p)) {
                     q.hotPixels = q.hotPixels || [];
                     q.hotPixels.push(p);
                 }
