@@ -1,5 +1,5 @@
 {
-  "name": "polyclip2",
+  "name": "polysnap",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,14 +12,11 @@
     "eslint-config-mourner": "^2.0.1"
   },
   "eslintConfig": {
-    "extends": "mourner",
-    "rules": {
-      "no-unmodified-loop-condition": 0
-    }
+    "extends": "mourner"
   },
   "scripts": {
     "test": "eslint index.js",
-    "build-viz": "browserify index.js -s polyclip -i viz/polyclip.js"
+    "build-viz": "browserify index.js -s polysnap -i viz/polysnap.js"
   },
   "keywords": [],
   "author": "Vladimir Agafonkin",

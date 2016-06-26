@@ -1,3 +1,5 @@
+## polysnap
+
 A work in progress JavaScript polygon operations library with integer snap rounding.
 
 #### Related papers

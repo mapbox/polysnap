@@ -10,7 +10,7 @@
 <body>
     <canvas id="canvas"></canvas>
     <script src='viz.js'></script>
-    <script src='polyclip.js'></script>
+    <script src='polysnap.js'></script>
     <script>
         var viz = new DebugViz('canvas');
 
@@ -32,7 +32,7 @@
         viz.poly(subject, 'rgba(0,0,255,0.2)');
 
         console.time('clip');
-        var result = polyclip(subject);
+        var result = polysnap(subject);
         console.timeEnd('clip');
 
         viz.poly(result, 'black', 'rgba(255,0,0,0.1)');

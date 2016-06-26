@@ -2,9 +2,9 @@
 
 var rbush = require('rbush');
 
-module.exports = polyclip;
+module.exports = polysnap;
 
-function polyclip(polygon) {
+function polysnap(polygon) {
     var edges = [];
     var hotPixels = [];
 
