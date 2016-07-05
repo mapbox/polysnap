@@ -125,7 +125,7 @@ function handleHotPixel(p, edgeTree) {
                 if (!node.leaf) {
                     nodesToSearch.push(q);
 
-                } else if (edgeIntersectsPixel(p, q.p, q.next.p)) {
+                } else if (edgeIntersectsPixel(q.p, q.next.p, p)) {
                     q.hotPixels = q.hotPixels || [];
                     q.hotPixels.push(p);
                 }
