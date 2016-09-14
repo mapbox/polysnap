@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "rbush": "https://github.com/mourner/rbush#memory-perf"
+    "rbush": "^2.0.1"
   },
   "devDependencies": {
-    "browserify": "^13.0.1",
-    "eslint": "^2.13.1",
+    "browserify": "^13.1.0",
+    "eslint": "^3.5.0",
     "eslint-config-mourner": "^2.0.1"
   },
   "eslintConfig": {
@@ -16,7 +16,7 @@
   },
   "scripts": {
     "test": "eslint index.js",
-    "build-viz": "browserify index.js -s polysnap -i viz/polysnap.js"
+    "build-viz": "browserify index.js -s polysnap -o viz/polysnap.js"
   },
   "keywords": [],
   "author": "Vladimir Agafonkin",
