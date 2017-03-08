@@ -76,7 +76,7 @@ DebugViz.prototype = {
         this._path(points, fill);
         ctx.stroke();
 
-        if (fill) ctx.fill('nonzero');
+        if (fill) ctx.fill('evenodd');
     },
 
     _path: function (points, fill) {

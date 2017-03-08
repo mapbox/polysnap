@@ -10,12 +10,12 @@ function polysnap(polygon) {
 
     for (var i = 0, last; i < polygon.length; i++) {
         // link polygon points into a circular doubly linked list
-        last = insertNode(polygon[i], i, last);
+        last = insertNode(polygon[i][0], polygon[i][1], i, last);
         updateBBox(last.prev);
         edges.push(last);
 
         // add each endpoint to hot pixels array
-        hotPixels.push(last.p);
+        hotPixels.push(makePixel(last.x, last.y));
     }
     updateBBox(last);
 
@@ -44,7 +44,7 @@ function polysnap(polygon) {
     var result = [];
     var e = last;
     do {
-        result.push(e.p);
+        result.push([e.x, e.y]);
         e = e.next;
     } while (e !== last);
 
@@ -65,7 +65,7 @@ function searchIntersections(edge, edgeTree, intersections) {
                     nodesToSearch.push(q);
 
                 } else if (isNewIntersection(edge, q)) {
-                    findIntersection(edge.p, edge.next.p, q.p, q.next.p, intersections);
+                    findIntersection(edge, edge.next, q, q.next, intersections);
                 }
             }
         }
@@ -75,41 +75,44 @@ function searchIntersections(edge, edgeTree, intersections) {
 
 // check if two edges introduce a new intersection
 function isNewIntersection(s, q) {
-    return s.i + 1 < q.i && s !== q.next && segmentsIntersect(s.p, s.next.p, q.p, q.next.p);
+    return s.i + 1 < q.i && s !== q.next && segmentsIntersect(s, s.next, q, q.next);
 }
 
 // check if an edge intersects a pixel
 function edgeIntersectsPixel(a, b, p) {
-    if (equals(p, a) || equals(p, b)) return false;
+    if ((p.x === a.x && p.y === a.y) ||
+        (p.x === b.x && p.y === b.y)) return false;
 
-    var dx = b[0] - a[0];
-    var dy = b[1] - a[1];
-    var px = p[0] - a[0];
-    var py = p[1] - a[1];
+    var dx = b.x - a.x;
+    var dy = b.y - a.y;
+    var px = p.x - a.x;
+    var py = p.y - a.y;
 
-    if (dy !== 0 && p[0] === a[0] + Math.floor(0.5 + dx * (py - 0.5) / dy)) return true; // bottom x
-    if (dy !== 0 && p[0] === a[0] + Math.floor(0.5 + dx * (py + 0.5) / dy)) return true; // top x
-    if (dx !== 0 && p[1] === a[1] + Math.floor(0.5 + dy * (px - 0.5) / dx)) return true; // left y
-    if (dx !== 0 && p[1] === a[1] + Math.floor(0.5 + dy * (px + 0.5) / dx)) return true; // right y
+    if (dy !== 0 && p.x === a.x + Math.floor(0.5 + dx * (py - 0.5) / dy)) return true; // bottom x
+    if (dy !== 0 && p.x === a.x + Math.floor(0.5 + dx * (py + 0.5) / dy)) return true; // top x
+    if (dx !== 0 && p.y === a.y + Math.floor(0.5 + dy * (px - 0.5) / dx)) return true; // left y
+    if (dx !== 0 && p.y === a.y + Math.floor(0.5 + dy * (px + 0.5) / dx)) return true; // right y
 
     return false;
 }
 
 // find a rounded intersection point between two edges and append to intersections array
 function findIntersection(a, b, c, d, intersections) {
-    var d1x = b[0] - a[0];
-    var d1y = b[1] - a[1];
-    var d2x = d[0] - c[0];
-    var d2y = d[1] - c[1];
+    var d1x = b.x - a.x;
+    var d1y = b.y - a.y;
+    var d2x = d.x - c.x;
+    var d2y = d.y - c.y;
     var cross = d1x * d2y - d1y * d2x;
-    var nom = (c[0] - a[0]) * d2y - (c[1] - a[1]) * d2x;
-    var px = a[0] + Math.floor(0.5 + d1x * nom / cross);
-    var py = a[1] + Math.floor(0.5 + d1y * nom / cross);
-    var p = [px, py];
+    var nom = (c.x - a.x) * d2y - (c.y - a.y) * d2x;
+    var px = a.x + Math.floor(0.5 + d1x * nom / cross);
+    var py = a.y + Math.floor(0.5 + d1y * nom / cross);
 
-    if (equals(p, a) || equals(p, b) || equals(p, c) || equals(p, d)) return;
+    if ((px === a.x && py === a.y) ||
+        (px === b.x && py === b.y) ||
+        (px === c.x && py === c.y) ||
+        (px === d.x && py === d.y)) return;
 
-    intersections.push(p);
+    intersections.push(makePixel(px, py));
 }
 
 // match a hot pixel against all edges
@@ -125,7 +128,7 @@ function handleHotPixel(p, edgeTree) {
                 if (!node.leaf) {
                     nodesToSearch.push(q);
 
-                } else if (edgeIntersectsPixel(q.p, q.next.p, p)) {
+                } else if (edgeIntersectsPixel(q, q.next, p)) {
                     q.hotPixels = q.hotPixels || [];
                     q.hotPixels.push(p);
                 }
@@ -141,19 +144,21 @@ function snapRoundEdge(e) {
 
     // sort hot pixels by pixel distance from the first edge point
     e.hotPixels.sort(function (a, b) {
-        return manhattanDist(e.p, a) - manhattanDist(e.p, b);
+        return manhattanDist(e, a) - manhattanDist(e, b);
     });
 
     // insert hot points between edge endpoints
     for (var i = 0, last = e; i < e.hotPixels.length; i++) {
-        last = insertNode(e.hotPixels[i], e.i, last);
+        var p = e.hotPixels[i];
+        last = insertNode(p.x, p.y, e.i, last);
     }
 }
 
 // insert a point into a circular doubly linked list
-function insertNode(p, i, prev) {
+function insertNode(x, y, i, prev) {
     var node = {
-        p: p,
+        x: x,
+        y: y,
         prev: null,
         next: null,
         i: i,
@@ -179,12 +184,10 @@ function insertNode(p, i, prev) {
 
 // update edge bounding box
 function updateBBox(node) {
-    var p1 = node.p;
-    var p2 = node.next.p;
-    node.minX = Math.min(p1[0], p2[0]);
-    node.minY = Math.min(p1[1], p2[1]);
-    node.maxX = Math.max(p1[0], p2[0]);
-    node.maxY = Math.max(p1[1], p2[1]);
+    node.minX = Math.min(node.x, node.next.x);
+    node.minY = Math.min(node.y, node.next.y);
+    node.maxX = Math.max(node.x, node.next.x);
+    node.maxY = Math.max(node.y, node.next.y);
     return node;
 }
 
@@ -214,10 +217,14 @@ function bboxIntersects(a, b) {
 
 // check if a point is inside a bbox
 function pointInsideBBox(p, box) {
-    return p[0] >= box.minX &&
-           p[0] <= box.maxX &&
-           p[1] >= box.minY &&
-           p[1] <= box.maxY;
+    return p.x >= box.minX &&
+           p.x <= box.maxX &&
+           p.y >= box.minY &&
+           p.y <= box.maxY;
+}
+
+function makePixel(x, y) {
+    return {x: x, y: y, edges: []};
 }
 
 // filter out duplicate points
@@ -234,20 +241,15 @@ function uniquePixels(arr) {
 
 // lexicographic point comparison
 function comparePixels(a, b) {
-    return (a[0] - b[0]) || (a[1] - b[1]);
+    return (a.x - b.x) || (a.y - b.y);
 }
 
 // calculate signed area of a triangle
 function area(p, q, r) {
-    return (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1]);
-}
-
-// check if two points are equal
-function equals(a, b) {
-    return a[0] === b[0] && a[1] === b[1];
+    return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 }
 
 // Manhattan distance between two points
 function manhattanDist(a, b) {
-    return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
