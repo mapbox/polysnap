@@ -10,7 +10,7 @@ function polysnap(polygon) {
 
     for (var i = 0, last; i < polygon.length; i++) {
         // link polygon points into a circular doubly linked list
-        last = insertNode(polygon[i][0], polygon[i][1], i, last);
+        last = insertNode(makeVertex(polygon[i][0], polygon[i][1], i), last);
         updateBBox(last.prev);
         edges.push(last);
 
@@ -38,6 +38,18 @@ function polysnap(polygon) {
     // subdivide each edge by its matching hot pixels
     for (i = 0; i < edges.length; i++) {
         snapRoundEdge(edges[i]);
+    }
+
+    for (i = 0; i < hotPixels.length; i++) {
+        var link = hotPixels[i].link;
+        sortLinks(link);
+        // var p = link;
+        // var angles = [];
+        // do {
+        //     angles.push(Math.round(p.angle * 100) / 100);
+        //     p = p.next;
+        // } while (p !== link);
+        // console.log(hotPixels[i], angles);
     }
 
     // collect the result array from the linked list
@@ -123,12 +135,17 @@ function handleHotPixel(p, edgeTree) {
     while (node) {
         for (var i = 0; i < node.children.length; i++) {
             var q = node.children[i];
+            var s = q.next;
 
             if (pointInsideBBox(p, q)) {
                 if (!node.leaf) {
                     nodesToSearch.push(q);
 
-                } else if (edgeIntersectsPixel(q, q.next, p)) {
+                } else if (p.x === q.x && p.y === q.y) {
+                    p.link = insertNode(makeLink(q, false), p.link);
+                    p.link = insertNode(makeLink(q, true), p.link);
+
+                } else if (edgeIntersectsPixel(q, s, p)) {
                     q.hotPixels = q.hotPixels || [];
                     q.hotPixels.push(p);
                 }
@@ -150,13 +167,15 @@ function snapRoundEdge(e) {
     // insert hot points between edge endpoints
     for (var i = 0, last = e; i < e.hotPixels.length; i++) {
         var p = e.hotPixels[i];
-        last = insertNode(p.x, p.y, e.i, last);
+        last = insertNode(makeVertex(p.x, p.y, e.i), last);
+        p.link = insertNode(makeLink(last, true), p.link);
+        p.link = insertNode(makeLink(last, false), p.link);
     }
 }
 
-// insert a point into a circular doubly linked list
-function insertNode(x, y, i, prev) {
-    var node = {
+// represents a polygon vertex and its assosiated edge
+function makeVertex(x, y, i) {
+    return {
         x: x,
         y: y,
         prev: null,
@@ -166,9 +185,49 @@ function insertNode(x, y, i, prev) {
         minY: 0,
         maxX: 0,
         maxY: 0,
-        hotPixels: null
+        hotPixels: null,
+        incoming: null,
+        outcoming: null
+    };
+}
+
+// represents a hot pixel
+function makePixel(x, y) {
+    return {
+        x: x,
+        y: y,
+        link: null
+    };
+}
+
+// represents a half-edge that connects to a particular vertex
+function makeLink(e, incoming) {
+    var p = incoming ? e.prev : e.next;
+    var dx = p.x - e.x;
+    var dy = p.y - e.y;
+
+    // pseudo-angle that's faster to calculate but has the same sorting properties
+    var angle = 0.5 + (dy < 0 ? -1 : 1) * (1 - dx / (Math.abs(dx) + Math.abs(dy))) / 4;
+
+    var link = {
+        angle: angle,
+        incoming: incoming,
+        vertex: e,
+        prev: null,
+        next: null
     };
 
+    if (incoming) {
+        e.incoming = link;
+    } else {
+        e.outcoming = link;
+    }
+
+    return link;
+}
+
+// insert a new node into a circular doubly linked list
+function insertNode(node, prev) {
     if (!prev) {
         node.prev = node;
         node.next = node;
@@ -223,10 +282,6 @@ function pointInsideBBox(p, box) {
            p.y <= box.maxY;
 }
 
-function makePixel(x, y) {
-    return {x: x, y: y, edges: []};
-}
-
 // filter out duplicate points
 function uniquePixels(arr) {
     arr.sort(comparePixels);
@@ -252,4 +307,63 @@ function area(p, q, r) {
 // Manhattan distance between two points
 function manhattanDist(a, b) {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+// Simon Tatham's linked list merge sort algorithm
+// http://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.html
+// sorts a circular list of half-edges in a vertex by angle
+function sortLinks(list) {
+    var i, p, q, e, tail, numMerges, pSize, qSize, oldHead,
+        inSize = 1;
+
+    do {
+        p = list;
+        oldHead = list;
+        list = null;
+        tail = null;
+        numMerges = 0;
+
+        while (p) {
+            numMerges++;
+            q = p;
+            pSize = 0;
+            for (i = 0; i < inSize; i++) {
+                pSize++;
+                q = q.next === oldHead ? null : q.next;
+                if (!q) break;
+            }
+
+            qSize = inSize;
+
+            while (pSize > 0 || (qSize > 0 && q)) {
+
+                if (pSize !== 0 && (qSize === 0 || !q || p.angle <= q.angle)) {
+                    e = p;
+                    p = p.next;
+                    pSize--;
+                    if (p === oldHead) p = null;
+                } else {
+                    e = q;
+                    q = q.next;
+                    qSize--;
+                    if (q === oldHead) q = null;
+                }
+
+                if (tail) tail.next = e;
+                else list = e;
+
+                e.prev = tail;
+                tail = e;
+            }
+
+            p = q;
+        }
+
+        tail.next = list;
+        list.prev = tail;
+        inSize *= 2;
+
+    } while (numMerges > 1);
+
+    return list;
 }

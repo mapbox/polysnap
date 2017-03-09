@@ -40,10 +40,10 @@ DebugViz.prototype = {
     },
 
     grid: function (color) {
-        for (var i = this._bbox[0]; i < this._bbox[2]; i++) {
+        for (var i = this._bbox[0]; i <= this._bbox[2]; i++) {
             this.vertical(i, color);
         }
-        for (var i = this._bbox[1]; i < this._bbox[3]; i++) {
+        for (var i = this._bbox[1]; i <= this._bbox[3]; i++) {
             this.horizontal(i, color);
         }
     },
